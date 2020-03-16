@@ -21,7 +21,7 @@ import java.util.List;
  * @version: 1.0.0
  */
 @State(Scope.Benchmark)
-public class E06ArrayAndLinkedList {
+public class E0006ArrayAndLinkedList {
     private static final int SIZE = 100000;
 
     /**

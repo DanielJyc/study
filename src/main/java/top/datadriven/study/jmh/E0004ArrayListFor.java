@@ -36,7 +36,7 @@ import java.util.ListIterator;
  * @version: 1.0.0
  */
 @State(Scope.Benchmark)
-public class E04ArrayListFor {
+public class E0004ArrayListFor {
     private static final int SIZE = 10;
 
     List<String> arrayList = new ArrayList<>();

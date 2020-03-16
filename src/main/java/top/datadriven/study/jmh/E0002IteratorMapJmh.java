@@ -17,7 +17,7 @@ import java.util.Map;
  * @version: 1.0.0
  */
 @State(Scope.Benchmark)
-public class E02IteratorMapJmh {
+public class E0002IteratorMapJmh {
     HashMap<Integer, String> map = new HashMap<>();
 
     @Setup

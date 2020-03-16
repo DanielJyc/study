@@ -26,7 +26,7 @@ import java.util.ListIterator;
  * @version: 1.0.0
  */
 @State(Scope.Benchmark)
-public class E05LinkedListFor {
+public class E0005LinkedListFor {
     private static final int SIZE = 20;
 
     List<String> stringLinkedList = new LinkedList<>();

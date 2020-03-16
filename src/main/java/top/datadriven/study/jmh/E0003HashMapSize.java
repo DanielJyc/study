@@ -14,7 +14,7 @@ import java.util.HashMap;
  * @version: 1.0.0
  */
 @State(Scope.Benchmark)
-public class E03HashMapSize {
+public class E0003HashMapSize {
     private static final int MAP_SIZE = 1024*64;
     private static final int MAP_SIZE_NOT_POWER = MAP_SIZE - 1;
 

@@ -17,7 +17,7 @@ Helloworld.countForward   thrpt   30  1641957271.120 ±  75079213.514  ops/s
  */
 //@State(Scope.Benchmark)是修饰成员变量作用域是整个测试，能够被整个测试过程可见。
 @State(Scope.Benchmark)
-public class E01ForJmh {
+public class E0001ForJmh {
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
     public void countBackward() {

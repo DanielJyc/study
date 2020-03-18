@@ -1,5 +1,6 @@
 package top.datadriven.study.jmh;
 
+import cn.hutool.core.util.RandomUtil;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.ql.util.express.DefaultContext;
@@ -7,7 +8,11 @@ import com.ql.util.express.ExpressRunner;
 import de.odysseus.el.ExpressionFactoryImpl;
 import de.odysseus.el.util.SimpleContext;
 import org.mvel2.MVEL;
-import org.mvel2.ParserContext;
+import org.openjdk.jmh.annotations.Benchmark;
+import org.openjdk.jmh.annotations.Scope;
+import org.openjdk.jmh.annotations.Setup;
+import org.openjdk.jmh.annotations.State;
+import top.datadriven.study.model.ExpressionParamModel;
 
 import javax.el.ExpressionFactory;
 import javax.el.ValueExpression;
@@ -15,148 +20,120 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 
+
 /**
- * @description:
+ * @description: 表达式引擎性能测试。执行结果：
+ * Benchmark                            Mode  Cnt       Score       Error  Units
+ * E0007ExpressionJmh.juel             thrpt   18   39709.214 ±  5731.886  ops/s
+ * E0007ExpressionJmh.mvel             thrpt   18    2613.657 ±  1317.470  ops/s
+ * E0007ExpressionJmh.mvelWithCompile  thrpt   18  102049.148 ± 33821.119  ops/s
+ * E0007ExpressionJmh.qlExpress        thrpt   18   45495.842 ±  2773.283  ops/s
  * @author: jiayancheng
  * @email: jiayancheng@foxmail.com
  * @datetime: 2020/3/16 4:52 下午
  * @version: 1.0.0
  */
+@State(Scope.Benchmark)
 public class E0007ExpressionJmh {
+    private static List<ExpressionParamModel> expressionParamModels = Lists.newArrayList();
+    private Map<String, Serializable> mvelSerializable = Maps.newConcurrentMap();
+    private static final Integer EXE_COUNT = 10;
+    ExpressRunner runner = new ExpressRunner();
+    ExpressionFactory factory = new ExpressionFactoryImpl();
 
-    public static void main(String[] args) throws Exception {
-        // 最常见的场景：多个条件进行and操作
-        String expression = " a<100 && b>=100 && c<=123";
-        System.out.println("\n执行100万次: " + expression);
-        executeExpress(expression);
 
-        // 包含特殊的操作：contains
-        expression = "a<100 && b>=100 && c<=123 && stringList.contains(str)";
-        System.out.println("\n执行100万次: " + expression);
-        executeExpress(expression);
-
-        // 一个稍微复杂一点的语法树
-        expression = "a>1 && ((b>1 || c<1) || (a>1 && b<1 && c>1))";
-        System.out.println("\n执行100万次: " + expression);
-        executeExpress(expression);
-    }
-
-    private static void executeExpress(String expression) throws Exception {
-        // 测试比较表达式：a>100 && b<100 && c>=123
-        Integer aValue = 12;
-        Integer bValue = 122;
-        Integer cValue = 45;
-        List<String> stringList = Lists.newArrayList("hello", "world");
-        String str = "hello";
-
-        long costTimeForQLExpress = 0;
-        long costTimeForMvel1 = 0;
-        long costTimeForMvel2 = 0;
-        long costTimeForMvel3 = 0;
-        long costTimeJuel = 0;
-
-        for (int i = 0; i < 10; i++) {
-            // QLExpress
-            ExpressRunner runner = new ExpressRunner();
-            {
-                long beginTime = System.currentTimeMillis();
-
-                for (int j = 0; j < 100000; j++) {
-                    DefaultContext<String, Object> context = new DefaultContext<String, Object>();
-                    context.put("a", aValue + j % 10);
-                    context.put("b", bValue);
-                    context.put("c", cValue);
-                    context.put("stringList", stringList);
-                    context.put("str", str);
-                    runner.execute(expression, context, null, true, false);
-                }
-                long endTime = System.currentTimeMillis();
-                costTimeForQLExpress += (endTime - beginTime);
-            }
-
-            // mvel 不编译
-            {
-                long beginTime = System.currentTimeMillis();
-
-                for (int j = 0; j < 100000; j++) {
-                    MVEL.eval(expression, getParamMap(aValue, bValue, cValue, stringList, str, j));
-                }
-
-                long endTime = System.currentTimeMillis();
-                costTimeForMvel1 += (endTime - beginTime);
-            }
-
-            // mvel 先编译
-            {
-                long beginTime = System.currentTimeMillis();
-                Serializable s = MVEL.compileExpression(expression);
-
-                for (int j = 0; j < 100000; j++) {
-                    MVEL.executeExpression(s, getParamMap(aValue, bValue, cValue, stringList, str, j));
-
-                }
-
-                long endTime = System.currentTimeMillis();
-                costTimeForMvel2 += (endTime - beginTime);
-            }
-
-            // mvel 先编译，且输入值类型指定
-            {
-                long beginTime = System.currentTimeMillis();
-                ParserContext context = ParserContext.create();
-                context.addInput("a", aValue.getClass());
-                context.addInput("b", bValue.getClass());
-                context.addInput("c", cValue.getClass());
-                Serializable s = MVEL.compileExpression(expression);
-
-                for (int j = 0; j < 100000; j++) {
-                    MVEL.executeExpression(s, getParamMap(aValue, bValue, cValue, stringList, str, j));
-                }
-
-                long endTime = System.currentTimeMillis();
-                costTimeForMvel3 += (endTime - beginTime);
-            }
-
-            // juel
-            {
-
-                long beginTime = System.currentTimeMillis();
-                // 1.Factory && Context
-                ExpressionFactory factory = new ExpressionFactoryImpl();
-
-                for (int j = 0; j < 100000; j++) {
-                    // 2. Variables设置
-                    SimpleContext context = new SimpleContext();
-                    context.setVariable("a", factory.createValueExpression(aValue + j % 10, aValue.getClass()));
-                    context.setVariable("b", factory.createValueExpression(bValue, bValue.getClass()));
-                    context.setVariable("c", factory.createValueExpression(cValue, cValue.getClass()));
-                    context.setVariable("stringList", factory.createValueExpression(stringList, List.class));
-                    context.setVariable("str", factory.createValueExpression(str, String.class));
-
-                    // 3.Parse && Evaluate
-                    ValueExpression e = factory.createValueExpression(context, "${" + expression + "}", Boolean.class);
-                    e.getValue(context);
-                }
-                long endTime = System.currentTimeMillis();
-                costTimeJuel += (endTime - beginTime);
-            }
+    @Setup
+    public void prepare() {
+        for (int i = 0; i < EXE_COUNT; i++) {
+            ExpressionParamModel expressionParamModel = new ExpressionParamModel();
+            // 最常见的场景：多个条件进行and操作
+            expressionParamModel.setExpression(" a<100 && b>=100 && c<=123");
+            expressionParamModel.setParams(getInputParamMap());
+            expressionParamModels.add(expressionParamModel);
         }
-
-        // 输出结果 ms
-        System.out.println("QLExpress 使用缓存:" + costTimeForQLExpress);
-        System.out.println("mvel 不编译:" + costTimeForMvel1);
-        System.out.println("mvel 先编译:" + costTimeForMvel2);
-        System.out.println("mvel 先编译，且输入值类型指定:" + costTimeForMvel3);
-        System.out.println("juel 输入值类型指定:" + costTimeJuel);
+        for (int i = 0; i < EXE_COUNT; i++) {
+            ExpressionParamModel expressionParamModel = new ExpressionParamModel();
+            // 包含特殊的操作：contains
+            expressionParamModel.setExpression(" a<100 && b>=100 && c<=123 && stringList.contains(str)");
+            expressionParamModel.setParams(getInputParamMap());
+            expressionParamModels.add(expressionParamModel);
+        }
+        for (int i = 0; i < EXE_COUNT; i++) {
+            ExpressionParamModel expressionParamModel = new ExpressionParamModel();
+            // 一个稍微复杂一点的语法树
+            expressionParamModel.setExpression(" a>1 && ((b>1 || c<1) || (a>1 && b<1 && c>1))");
+            expressionParamModel.setParams(getInputParamMap());
+            expressionParamModels.add(expressionParamModel);
+        }
     }
 
-    private static Map<String, Object> getParamMap(Integer aValue, Integer bValue, Integer cValue, List<String> stringList, String str, int j) {
+    private static Map<String, Object> getInputParamMap() {
+        List<String> stringList = Lists.newArrayList("hello", "world");
         Map<String, Object> paramMap = Maps.newHashMap();
-        paramMap.put("a", aValue + j % 10);
-        paramMap.put("b", bValue);
-        paramMap.put("c", cValue);
+        paramMap.put("a", RandomUtil.randomInt(30));
+        paramMap.put("b", RandomUtil.randomInt(300));
+        paramMap.put("c", RandomUtil.randomInt(100));
         paramMap.put("stringList", stringList);
-        paramMap.put("str", str);
+        paramMap.put("str", "hello");
         return paramMap;
     }
+
+
+    /**
+     * ql表达式引擎
+     */
+    @Benchmark
+    public void qlExpress() throws Exception {
+        for (ExpressionParamModel expressionParamModel : expressionParamModels) {
+            DefaultContext<String, Object> context = new DefaultContext<>();
+            context.putAll(expressionParamModel.getParams());
+            runner.execute(expressionParamModel.getExpression(), context, null, true, false);
+        }
+    }
+
+    /**
+     * mvel表达式引擎
+     */
+    @Benchmark
+    public void mvel() {
+        for (ExpressionParamModel expressionParamModel : expressionParamModels) {
+            DefaultContext<String, Object> context = new DefaultContext<>();
+            context.putAll(expressionParamModel.getParams());
+            MVEL.eval(expressionParamModel.getExpression(), context);
+        }
+    }
+
+    /**
+     * mvel表达式引擎：预编译
+     */
+    @Benchmark
+    public void mvelWithCompile() {
+        for (ExpressionParamModel expressionParamModel : expressionParamModels) {
+            String expression = expressionParamModel.getExpression();
+            Serializable ser = mvelSerializable.get(expression);
+            if (ser == null) {
+                ser = MVEL.compileExpression(expression);
+                mvelSerializable.put(expression, ser);
+            }
+            MVEL.executeExpression(ser, expressionParamModel.getParams());
+        }
+
+    }
+
+    /**
+     * juel表达式引擎
+     */
+    @Benchmark
+    public void juel() {
+        for (ExpressionParamModel expressionParamModel : expressionParamModels) {
+            SimpleContext context = new SimpleContext();
+            expressionParamModel.getParams().forEach((k, v) -> {
+                context.setVariable(k, factory.createValueExpression(v, v.getClass()));
+            });
+            ValueExpression e = factory.createValueExpression(context, "${" + expressionParamModel.getExpression() + "}", Boolean.class);
+            // 获取结果
+            e.getValue(context);
+        }
+    }
+
 }

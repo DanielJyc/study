@@ -19,7 +19,7 @@ import org.openjdk.jmh.annotations.State;
  * *      3. 常量字符串和变量拼接时（如：String str3=baseStr + “01”;）会调用stringBuilder.append()在堆上创建新的对象。
  * * 参考：https://blog.csdn.net/tyyking/article/details/82496901
  * *      https://blog.csdn.net/qq_39713775/article/details/100149499
- * *
+ * *todo 测试一下内存使用量
  * @author: jiayancheng
  * @email: jiayancheng@foxmail.com
  * @datetime: 2020/3/9 10:00 下午

@@ -30,7 +30,7 @@ import org.openjdk.jmh.annotations.State;
  * @version: 1.0.0
  */
 @State(Scope.Benchmark)
-public class E0008StringSplit {
+public class E0008StringSplitWithIndexOf1 {
     private static final String TEST_STR = "abcdefghijklmnopqrstuvwxyz";
 
     /**

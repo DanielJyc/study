@@ -30,7 +30,7 @@ import java.util.regex.Pattern;
  * @version: 1.0.0
  */
 @State(Scope.Benchmark)
-public class E0010Regx {
+public class E0011Regx {
     private static final int SIZE = 100000;
     private static String msgContent = "<?xml version=\"UTF-8\"?> " +
             "<root xmlns=\"namespace_string\">." +

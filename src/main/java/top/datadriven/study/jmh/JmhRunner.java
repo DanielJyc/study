@@ -16,7 +16,7 @@ public class JmhRunner {
     public static void main(String[] args) throws RunnerException {
         Options opt = new OptionsBuilder()
                 //JMH 会找寻标注了@Benchmark类型的方法，可能会跑一些你所不需要的测试，这样就需要通过include和exclude两个方法来完成包含以及排除的语义。
-                .include("E0010Regx")
+                .include("E0012StreamIntJmh")
                 //预热做2次
                 .warmupIterations(2)
                 //正式计量测试做10次，而每次都是先执行完预热再执行正式计量，内容都是调用标注了@Benchmark的代码
